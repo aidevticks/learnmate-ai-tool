@@ -64,9 +64,12 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5174",  # React dev server origin
+    "http://localhost:5173",  # React dev server origin
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+]
 CORS_ALLOW_ALL_ORIGINS = True
 
 

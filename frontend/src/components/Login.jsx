@@ -22,7 +22,7 @@ export default function Login() {
   
       if (response.ok && data.tokens && data.tokens.access) {
         console.log("Navigating to home...");
-        localStorage.setItem("token", data.tokens.access);
+        localStorage.setItem("access_token", data.tokens.access);
         localStorage.setItem("refresh_token", data.tokens.refresh);
         localStorage.setItem("username", data.detail.username);
         login(data.tokens.access, data.detail.username);

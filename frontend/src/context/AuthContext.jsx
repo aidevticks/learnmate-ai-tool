@@ -4,7 +4,7 @@ import React, { createContext, useState, useEffect } from "react";
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => localStorage.getItem("access_token"));
   const [user, setUser] = useState(null);
 
   useEffect(() => {
@@ -17,14 +17,14 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = (token, username) => {
-    localStorage.setItem("token", token);
+    localStorage.setItem("access_token", token);
     localStorage.setItem("username", username);
     setToken(token);
     setUser({ username });
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("access_token");
     localStorage.removeItem("username");
     setToken(null);
     setUser(null);
