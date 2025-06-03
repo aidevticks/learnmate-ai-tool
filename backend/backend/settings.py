@@ -39,8 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'core',
+    'corsheaders',
     'rest_framework_simplejwt.token_blacklist',
 ]
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -50,8 +54,24 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
+
+AUTHENTICATION_BACKENDS = [
+    'core.authentication.EmailBackend',  # use your actual app name
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5174",  # React dev server origin
+]
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+
+APPEND_SLASH = False
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # Change to IsAuthenticated in prod
@@ -138,3 +158,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
