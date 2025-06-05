@@ -88,7 +88,6 @@ def upload_pdf(request):
 
         # Get embedding from Ollama
         embedding = get_embedding(extracted_text)
-        print(f"Embedding: {embedding}")
 
         # Save extracted text to DB
         uploaded_file.extracted_text = extracted_text
@@ -101,7 +100,8 @@ def upload_pdf(request):
         return Response({
             'file': serializer.data,
             'embedding_text': embedding,
-            'extracted_text': extracted_text
+            'extracted_text': extracted_text,
+            "file_id": uploaded_file.id
         }, status=201)
 
     return Response(serializer.errors, status=400)
@@ -119,13 +119,7 @@ def generate_flashcards(request):
     except UploadedFile.DoesNotExist:
         return Response({"error": "File not found or not owned by user"}, status=404)
 
-    # Check cache first
-    cached_flashcards = Flashcard.objects.filter(source_file=uploaded_file, user=request.user)
-    if cached_flashcards.exists():
-        serializer = FlashcardSerializer(cached_flashcards, many=True)
-        return Response({"message": "Flashcards retrieved from cache", "flashcards": serializer.data}, status=200)
-
-    # If no cached, generate
+    # 🔁 Generate new flashcards
     chunks = split_text_into_chunks(uploaded_file.extracted_text, chunk_size=500)
     flashcards = []
 
@@ -142,7 +136,8 @@ def generate_flashcards(request):
                 serializer.save()
                 flashcards.append(serializer.data)
 
-    return Response({"message": "Flashcards generated", "flashcards": flashcards}, status=201)
+    return Response({"message": "new flashcards generated", "flashcards": flashcards}, status=201)
+
 
 
 def split_text_into_chunks(text, chunk_size=500):

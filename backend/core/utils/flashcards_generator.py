@@ -3,7 +3,7 @@ import json
 
 def generate_flashcards_from_text(text: str, model: str = "gemma:2b") -> list[dict]:
     prompt = (
-        "Generate 5 flashcards (question-answer pairs) from the following text. "
+        "Generate 10 flashcards (question-answer pairs) from the following text. "
         "Respond strictly in this JSON array format:\n"
         "[{\"question\": \"...\", \"answer\": \"...\"}, ...]\n\n"
         f"TEXT:\n{text[:4000]}"  # Ollama has a token limit – truncate if needed

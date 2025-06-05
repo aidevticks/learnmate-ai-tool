@@ -97,6 +97,8 @@ export default function Home() {
       }
 
       if (response.ok) {
+        const resData = await response.json();
+        localStorage.setItem("file_id", resData.file_id);
         setUploadStatus("✅ File uploaded successfully!");
         setFile(null);
       } else {
@@ -108,6 +110,83 @@ export default function Home() {
       setUploadStatus("❌ Unexpected error occurred during upload.");
     }
   };
+  const handleFlashcardsClick = async () => {
+    navigate("/flashcards", { state: { loading: true } }); // Show "Generating..." immediately
+  
+    const accessToken = localStorage.getItem("access_token");
+    const refreshToken = localStorage.getItem("refresh_token");
+  
+    if (!accessToken || !refreshToken) {
+      setUploadStatus("⚠️ No token found. Please login.");
+      navigate("/login");
+      return;
+    }
+  
+    const refreshAccessToken = async () => {
+      const res = await fetch("http://localhost:8000/api/refresh_token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh: refreshToken }),
+      });
+  
+      if (!res.ok) throw new Error("Refresh token invalid");
+  
+      const data = await res.json();
+      localStorage.setItem("access_token", data.access);
+      return data.access;
+    };
+  
+    const doGenerateFlashcards = async (token) => {
+      return await fetch("http://127.0.0.1:8000/api/generate-flashcards/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ file_id: localStorage.getItem("file_id") }),
+      });
+    };
+  
+    try {
+      let response = await doGenerateFlashcards(accessToken);
+  
+      if (response.status === 401) {
+        // Token expired, try to refresh
+        try {
+          const newAccessToken = await refreshAccessToken();
+          response = await doGenerateFlashcards(newAccessToken);
+        } catch (err) {
+          console.error("Token refresh failed:", err);
+          localStorage.clear();
+          setUploadStatus("⚠️ Session expired. Please login again.");
+          navigate("/login");
+          return;
+        }
+      }
+  
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error?.error || "Failed to generate flashcards");
+      }
+
+      const data = await response.json();
+      const fileId = localStorage.getItem("file_id");
+
+      const allFlashcards = JSON.parse(localStorage.getItem("flashcardsData") || "{}");
+      allFlashcards[fileId] = data.flashcards;
+
+      localStorage.setItem("flashcardsData", JSON.stringify(allFlashcards));
+  
+      navigate("/flashcards", { state: { loading: false, flashcards: data.flashcards } });
+  
+    } catch (error) {
+      console.error("Flashcard generation error:", error.message);
+      navigate("/flashcards", {
+        state: { loading: false, error: error.message }
+      });
+    }
+  };
+  
 
   return (
     <>
@@ -167,7 +246,7 @@ export default function Home() {
           )}
           {uploadStatus === "✅ File uploaded successfully!" && (
             <div className="cards-container">
-              <div className="card" onClick={() => navigate('/flashcards')}>
+              <div className="card" onClick={handleFlashcardsClick}>
                 <h3>Flashcards Q/A</h3>
                 <p>Quick review with generated questions and answers.</p>
               </div>
