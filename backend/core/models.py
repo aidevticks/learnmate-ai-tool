@@ -22,3 +22,5 @@ class Flashcard(models.Model):
 
     def __str__(self):
         return f"Flashcard for {self.user.username}: {self.question[:30]}"
+    
+

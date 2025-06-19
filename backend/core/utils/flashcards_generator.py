@@ -1,20 +1,43 @@
-import ollama
+from langchain_core.prompts import PromptTemplate
+from langchain_community.chat_models import ChatOllama
+from langchain_core.output_parsers import JsonOutputParser
 import json
 
-def generate_flashcards_from_text(text: str, model: str = "gemma:2b") -> list[dict]:
-    prompt = (
-        "Generate 10 flashcards (question-answer pairs) from the following text. "
-        "Respond strictly in this JSON array format:\n"
-        "[{\"question\": \"...\", \"answer\": \"...\"}, ...]\n\n"
-        f"TEXT:\n{text[:4000]}"  # Ollama has a token limit – truncate if needed
-    )
+# Prompt for generating JSON-style flashcards
+template = """
+Generate 10 flashcards from the following text.
+Each flashcard should be a dictionary with a 'question' and 'answer'.
+Return a JSON array in this format:
+[
+  {{"question": "...", "answer": "..."}},
+  ...
+]
 
-    response = ollama.chat(model=model, messages=[
-        {"role": "user", "content": prompt}
-    ])
-    content = response["message"]["content"]
+Text:
+{text}
+"""
 
+prompt = PromptTemplate.from_template(template)
+
+# Setup Ollama with gemma:2b
+llm = ChatOllama(model="gemma:2b")
+
+# Optional: JSON parser
+parser = JsonOutputParser()
+
+# LangChain runnable pipeline
+chain = prompt | llm | parser
+
+def generate_flashcards_from_text(text: str) -> list[dict]:
     try:
-        return json.loads(content)
-    except json.JSONDecodeError:
+        result = chain.invoke({"text": text[:4000]})
+        if isinstance(result, list) and all("question" in item and "answer" in item for item in result):
+            print("Generated")
+            return result
+        else:
+            print("Unexpected output format:", result)
+            return []
+    except Exception as e:
+        print("Error:", e)
         return []
+
