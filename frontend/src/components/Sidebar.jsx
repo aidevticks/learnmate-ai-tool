@@ -11,7 +11,7 @@ export default function Sidebar({ collapsed, toggleSidebar }) {
       <button className="toggle-btn" onClick={toggleSidebar}>
         {collapsed ? <FaChevronRight /> : <FaChevronLeft />}
       </button>
-      <h2 className="brand">{!collapsed && "📘 LearnMate"}</h2>
+      <h2 className="brand">{!collapsed && " LearnMate"}</h2>
       <nav className="sidebar-links">
         <a onClick={() => navigate("/")}>
           <FaHome />
