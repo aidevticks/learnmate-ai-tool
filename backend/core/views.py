@@ -1,4 +1,5 @@
 from rest_framework import status
+from .models import UploadedFile, Flashcard
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
@@ -6,7 +7,13 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
-from .serializer import UploadedFileSerializer
+from .upload_file_serializer import UploadedFileSerializer
+from .flashcards_serializer import FlashcardSerializer
+from .utils.pdf_text_extracter import extract_text_from_pdf
+from .utils.embedding import get_embedding 
+from .utils.flashcards_generator import generate_flashcards_from_text
+
+
 
 # Generate tokens manually
 def get_tokens_for_user(user):
@@ -74,6 +81,70 @@ def logout(request):
 def upload_pdf(request):
     serializer = UploadedFileSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save(user=request.user)
-        return Response(serializer.data, status=201)
+        uploaded_file = serializer.save(user=request.user)
+
+        # Call the utility function
+        extracted_text = extract_text_from_pdf(uploaded_file.file.path, method='pdfplumber')  # 'pymupdf' or 'pdfplumber'
+
+        # Get embedding from Ollama
+        embedding = get_embedding(extracted_text)
+        print(f"Embedding: {embedding}")
+
+        # Save extracted text to DB
+        uploaded_file.extracted_text = extracted_text
+        uploaded_file.embedding = embedding
+        uploaded_file.save()
+
+        # Re-serialize to include extracted_text
+        updated_serializer = UploadedFileSerializer(uploaded_file)
+
+        return Response({
+            'file': serializer.data,
+            'embedding_text': embedding,
+            'extracted_text': extracted_text
+        }, status=201)
+
     return Response(serializer.errors, status=400)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_flashcards(request):
+    file_id = request.data.get("file_id")
+    if not file_id:
+        return Response({"error": "file_id is required"}, status=400)
+
+    try:
+        uploaded_file = UploadedFile.objects.get(id=file_id, user=request.user)
+    except UploadedFile.DoesNotExist:
+        return Response({"error": "File not found or not owned by user"}, status=404)
+
+    # Check cache first
+    cached_flashcards = Flashcard.objects.filter(source_file=uploaded_file, user=request.user)
+    if cached_flashcards.exists():
+        serializer = FlashcardSerializer(cached_flashcards, many=True)
+        return Response({"message": "Flashcards retrieved from cache", "flashcards": serializer.data}, status=200)
+
+    # If no cached, generate
+    chunks = split_text_into_chunks(uploaded_file.extracted_text, chunk_size=500)
+    flashcards = []
+
+    for chunk in chunks:
+        qa_pairs = generate_flashcards_from_text(chunk)
+        for qa in qa_pairs:
+            serializer = FlashcardSerializer(data={
+                "user": request.user.id,
+                "question": qa.get("question", ""),
+                "answer": qa.get("answer", ""),
+                "source_file": uploaded_file.id,
+            })
+            if serializer.is_valid():
+                serializer.save()
+                flashcards.append(serializer.data)
+
+    return Response({"message": "Flashcards generated", "flashcards": flashcards}, status=201)
+
+
+def split_text_into_chunks(text, chunk_size=500):
+    words = text.split()
+    return [" ".join(words[i:i+chunk_size]) for i in range(0, len(words), chunk_size)]

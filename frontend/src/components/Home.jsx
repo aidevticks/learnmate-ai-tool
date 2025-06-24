@@ -22,17 +22,11 @@ export default function Home() {
     try {
       const response = await fetch("http://localhost:8000/api/auth/logout/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: refreshToken }),
       });
 
-      if (response.ok) {
-        console.log("Logged out successfully");
-      } else {
-        console.warn("Server-side logout failed");
-      }
+      if (!response.ok) console.warn("Server-side logout failed");
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
@@ -45,55 +39,50 @@ export default function Home() {
     setFile(e.target.files[0]);
     setUploadStatus("");
   };
-  
+
   const uploadFile = async () => {
     if (!file) {
       setUploadStatus("❗ Please select a file first.");
       return;
     }
-  
+
     const accessToken = localStorage.getItem("access_token");
     const refreshToken = localStorage.getItem("refresh_token");
-  
+
     if (!accessToken || !refreshToken) {
       setUploadStatus("⚠️ No token found. Please login.");
       navigate("/login");
       return;
     }
-  
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("title", file.name);
-  
-    const doUpload = async (token) => {
-      return await fetch("http://localhost:8000/api/upload/", {
+
+    const doUpload = async (token) =>
+      await fetch("http://localhost:8000/api/upload/", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-    };
-  
+
     const refreshAccessToken = async () => {
       const res = await fetch("http://localhost:8000/api/refresh_token/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: refreshToken }),
       });
-  
-      if (!res.ok) {
-        throw new Error("Refresh token invalid");
-      }
-  
+
+      if (!res.ok) throw new Error("Refresh token invalid");
+
       const data = await res.json();
       localStorage.setItem("access_token", data.access);
       return data.access;
     };
-  
+
     try {
       let response = await doUpload(accessToken);
-  
+
       if (response.status === 401) {
         try {
           const newAccessToken = await refreshAccessToken();
@@ -106,7 +95,7 @@ export default function Home() {
           return;
         }
       }
-  
+
       if (response.ok) {
         setUploadStatus("✅ File uploaded successfully!");
         setFile(null);
@@ -114,13 +103,11 @@ export default function Home() {
         const err = await response.json();
         setUploadStatus(`❌ Upload failed: ${JSON.stringify(err)}`);
       }
-  
     } catch (error) {
       console.error("Unexpected error:", error);
       setUploadStatus("❌ Unexpected error occurred during upload.");
     }
   };
-  
 
   return (
     <>
@@ -146,27 +133,61 @@ export default function Home() {
         </nav>
 
         <main className="main">
-          <h1>Welcome, <span className="username">{user?.username}</span> 👋</h1>
-          <p>You have successfully logged in to <strong>LearnMate</strong>.</p>
+          <h1>LearnMate – Your AI-powered Study Tool</h1>
+          <p className="tool-description">
+            Upload your PDFs and get summarized insights instantly. Designed to boost your learning with smart content analysis and fast processing.
+          </p>
 
-          <div className="upload-section">
-            <h2>Upload a PDF</h2>
-            <div className="upload-box">
-              <label className="custom-file-upload">
-                <input type="file" accept="application/pdf" onChange={handleFileChange} />
-                {file ? file.name : "📄 Choose PDF"}
-              </label>
-              <button className="upload-btn" onClick={uploadFile}>📤 Upload</button>
-              {uploadStatus && (
-                <p className={`upload-status ${uploadStatus.startsWith("✅") ? "success" : "error"}`}>
-                  {uploadStatus}
-                </p>
-              )}
-            </div>
+          <div className="upload-box">
+            <input
+              type="file"
+              id="pdf-upload"
+              accept="application/pdf"
+              onChange={handleFileChange}
+              hidden
+            />
+            <label htmlFor="pdf-upload" className="choose-btn">
+              📄 {file ? file.name : "Choose PDF"}
+            </label>
+
+            <button className="upload-btn" onClick={uploadFile} disabled={!file}>
+              📤 Upload
+            </button>
           </div>
-        </main>
-      </div>
 
+          {uploadStatus && (
+            <div
+              className={`upload-message ${
+                uploadStatus.startsWith("✅") ? "success-message" : "error-message"
+              }`}
+            >
+              <span className="icon">{uploadStatus.startsWith("✅") ? "✅" : "❌"}</span>
+              <span className="text">{uploadStatus.replace(/^✅ |^❌ /, "")}</span>
+            </div>
+          )}
+          {uploadStatus === "✅ File uploaded successfully!" && (
+            <div className="cards-container">
+              <div className="card" onClick={() => navigate('/flashcards')}>
+                <h3>Flashcards Q/A</h3>
+                <p>Quick review with generated questions and answers.</p>
+              </div>
+              <div className="card" onClick={() => navigate('/quizzes')}>
+                <h3>Quizzes</h3>
+                <p>Test your knowledge with AI-generated quizzes.</p>
+              </div>
+              <div className="card" onClick={() => navigate('/notes')}>
+                <h3>Important Notes</h3>
+                <p>Summarized key points extracted from your PDF.</p>
+              </div>
+              <div className="card" onClick={() => navigate('/tutor')}>
+                <h3>Tutor Assistant</h3>
+                <p>Interactive explanations and personalized help.</p>
+              </div>
+            </div>
+          )}
+        </main>
+
+      </div>
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -175,6 +196,7 @@ export default function Home() {
               background: linear-gradient(145deg, #f8fafc, #e2e8f0);
               font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
+
             .navbar {
               background: #ffffff;
               padding: 1rem 2rem;
@@ -185,11 +207,14 @@ export default function Home() {
               position: relative;
               z-index: 100;
             }
+
             .nav-left {
               display: flex;
               align-items: center;
               gap: 1.5rem;
+              flex-wrap: wrap;
             }
+
             .nav-left a {
               color: #374151;
               text-decoration: none;
@@ -197,6 +222,7 @@ export default function Home() {
               position: relative;
               transition: color 0.2s ease;
             }
+
             .nav-left a::after {
               content: "";
               position: absolute;
@@ -207,17 +233,21 @@ export default function Home() {
               background-color: #2563eb;
               transition: width 0.3s ease;
             }
+
             .nav-left a:hover {
               color: #2563eb;
             }
+
             .nav-left a:hover::after {
               width: 100%;
             }
+
             .brand {
               font-size: 1.7rem;
               font-weight: bold;
               color: #2563eb;
             }
+
             .avatar {
               background: none;
               border: none;
@@ -225,12 +255,15 @@ export default function Home() {
               cursor: pointer;
               transition: color 0.2s ease;
             }
+
             .avatar:hover {
               color: #2563eb;
             }
+
             .nav-right {
               position: relative;
             }
+
             .dropdown {
               position: absolute;
               top: 50px;
@@ -245,11 +278,13 @@ export default function Home() {
               transition: all 0.3s ease;
               overflow: hidden;
             }
+
             .dropdown.active {
               opacity: 1;
               visibility: visible;
               transform: translateY(0);
             }
+
             .dropdown button {
               width: 100%;
               padding: 0.75rem 1rem;
@@ -261,104 +296,157 @@ export default function Home() {
               cursor: pointer;
               transition: background 0.2s ease;
             }
+
             .dropdown button:hover {
               background: #f1f5f9;
             }
+
             .logout {
               color: #dc2626;
             }
+
             .main {
               text-align: center;
               margin-top: 4rem;
               padding: 1rem;
             }
+
             .main h1 {
               font-size: 2.5rem;
               color: #1f2937;
               font-weight: 700;
             }
-            .main .username {
-              color: #2563eb;
-            }
-            .main p {
-              margin-top: 1rem;
-              font-size: 1.2rem;
+
+            .tool-description {
+              font-size: 1.1rem;
               color: #4b5563;
+              margin-top: 0.5rem;
+              max-width: 600px;
+              margin-left: auto;
+              margin-right: auto;
+              text-align: center;
             }
-            .upload-section {
-              margin-top: 3rem;
-              padding: 1rem;
-            }
-            .upload-section h2 {
-              font-size: 1.6rem;
-              margin-bottom: 1.5rem;
-              color: #1f2937;
-            }
+
             .upload-box {
-              background: white;
+              background: #ffffff;
               padding: 2rem;
-              max-width: 400px;
-              margin: 0 auto;
+              max-width: 450px;
+              margin: 2rem auto;
               border-radius: 1rem;
-              box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+              box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
               display: flex;
-              flex-direction: column;
               gap: 1rem;
+              justify-content: center;
               align-items: center;
+              flex-wrap: wrap;
             }
-            .custom-file-upload {
-              display: inline-block;
-              padding: 0.8rem 1.5rem;
+
+            .choose-btn {
+              background-color: #f3f4f6;
+              color: #374151;
+              border: 2px dashed #cbd5e1;
+              padding: 0.75rem 1.5rem;
+              border-radius: 8px;
               cursor: pointer;
-              background-color: #2563eb;
-              color: white;
-              border-radius: 0.5rem;
+              transition: all 0.3s ease;
               font-weight: 500;
-              transition: background 0.2s ease;
             }
-            .custom-file-upload:hover {
-              background-color: #1d4ed8;
+
+            .choose-btn:hover {
+              background-color: #e5e7eb;
+              border-color: #9ca3af;
             }
-            .custom-file-upload input {
-              display: none;
-            }
+
             .upload-btn {
-              background-color: #10b981;
+              background-color: #4f46e5;
               color: white;
-              padding: 0.7rem 1.5rem;
+              padding: 0.75rem 1.5rem;
+              border-radius: 8px;
               border: none;
-              border-radius: 0.5rem;
-              font-size: 1rem;
-              font-weight: 500;
               cursor: pointer;
-              transition: background-color 0.2s ease;
+              transition: background-color 0.3s ease;
+              font-weight: 600;
             }
+
             .upload-btn:hover {
-              background-color: #059669;
+              background-color: #4338ca;
             }
+
+            .upload-btn:disabled {
+              background-color: #9ca3af;
+              cursor: not-allowed;
+            }
+
             .upload-status {
               font-weight: 500;
-              margin-top: 0.5rem;
+              margin-top: 1rem;
             }
+
             .upload-status.success {
               color: #10b981;
             }
+
             .upload-status.error {
               color: #dc2626;
             }
+            .cards-container {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+              gap: 1.5rem;
+              max-width: 1000px;
+              margin: 2rem auto;
+              padding: 1rem;
+            }
+
+            .card {
+              background: linear-gradient(to bottom right, #f8fafc, #e0f2fe);
+              border-radius: 1rem;
+              cursor: pointer;
+              padding: 1.5rem;
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+              transition: transform 0.3s ease, box-shadow 0.3s ease;
+              text-align: left;
+              cursor: pointer;
+              border: 1px solid #e2e8f0;
+            }
+
+            .card:hover {
+              transform: translateY(-5px);
+              box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+            }
+
+            .card h3 {
+              font-size: 1.25rem;
+              margin-bottom: 0.5rem;
+              color: #1e40af;
+              font-weight: 600;
+            }
+
+            .card p {
+              font-size: 0.95rem;
+              color: #374151;
+              line-height: 1.4;
+            }
             @media (max-width: 768px) {
-              .nav-left {
-                flex-wrap: wrap;
+              .navbar {
+                flex-direction: column;
+                align-items: flex-start;
                 gap: 1rem;
               }
+
+              .nav-left,
+              .nav-right {
+                width: 100%;
+                justify-content: space-between;
+              }
+
               .main h1 {
                 font-size: 2rem;
               }
-              .main p {
-                font-size: 1rem;
-              }
+
               .upload-box {
                 width: 90%;
+                flex-direction: column;
               }
             }
           `,
