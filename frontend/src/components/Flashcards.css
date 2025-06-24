@@ -1,21 +1,20 @@
-/* Light & Dark Themes */
-body.light-mode {
-  background: linear-gradient(to right, #fefcea, #f1da36);
-  color: #2c2c2c;
-}
-
-body.dark-mode {
-  background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-  color: #f0f0f0;
-}
 
 /* Page Container */
 .flashcards-page {
+  background: transparent;
+  min-height: 100vh;
   padding: 30px 20px;
   margin: 0 auto;
   width: 100%;
   max-width: 1400px;
   box-sizing: border-box;
+  display: flex;
+}
+
+.layout {
+  display: flex;
+  min-height: 100vh;
+  background: transparent;
 }
 
 /* Header */
@@ -25,12 +24,6 @@ body.dark-mode {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-}
-
-.app-title {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: #ff6f00;
 }
 
 .controls button {
@@ -45,6 +38,24 @@ body.dark-mode {
   cursor: pointer;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   transition: all 0.3s;
+}
+
+.flashcards-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .controls button:hover {
