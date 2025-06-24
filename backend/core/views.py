@@ -13,6 +13,7 @@ from .utils.pdf_text_extracter import extract_text_from_pdf
 from .utils.embedding import get_embedding 
 from .utils.flashcards_generator import generate_flashcards_from_text
 from .utils.quiz_generator import generate_mcqs_from_text
+from .utils.notes_generator import generate_notes_from_text
 
 
 # Generate tokens manually
@@ -178,3 +179,29 @@ def generate_mcq_quiz(request):
         }, status=201)
     else:
         return Response({"message": "No MCQs generated"}, status=200)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_notes(request):
+    file_id = request.data.get("file_id")
+    if not file_id:
+        return Response({"error": "file_id is required"}, status=400)
+
+    try:
+        uploaded_file = UploadedFile.objects.get(id=file_id, user=request.user)
+    except UploadedFile.DoesNotExist:
+        return Response({"error": "File not found or not owned by user"}, status=404)
+
+    # Truncate long content to fit into context
+    max_length = 10000
+    content = uploaded_file.extracted_text
+    if len(content) > max_length:
+        content = content[:max_length]
+
+    notes = generate_notes_from_text(content)
+
+    return Response({
+        "message": "Study notes generated successfully",
+        "notes": notes
+    }, status=201)

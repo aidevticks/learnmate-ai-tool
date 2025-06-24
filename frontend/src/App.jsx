@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Flashcards from "./components/Flashcards.jsx"; // ✅ Uncomment this
 import Quiz from "./components/Quiz.jsx";
 import MyLibrary from "./components/MyLibrary";
+import ImportantNotes from "./components/ImportantNotes.jsx";
 
 function App() {
   return (
@@ -34,6 +35,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Quiz />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notes"
+        element={
+          <ProtectedRoute>
+            <ImportantNotes />
           </ProtectedRoute>
         }
       />
