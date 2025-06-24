@@ -66,7 +66,7 @@ export default function Flashcards() {
         </div>
       </header>
 
-        <h2 className="page-subtitle">🧠 Your Flashcards</h2>
+        <h2 className="page-subtitle">Flashcards</h2>
 
         <section ref={pdfRef} id="flashcards-container" className="flashcards-grid">
           {flashcards.length === 0 ? (

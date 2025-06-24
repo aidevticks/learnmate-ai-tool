@@ -4,10 +4,12 @@ import { useNavigate } from "react-router-dom";
 import "./MyLibrary.css";
 import Sidebar from "../components/Sidebar";
 import { FaTrashAlt } from "react-icons/fa";
+import emptyImage from "../assets/empty-state.svg";
 
 export default function MyLibrary() {
 	const [flashcardSets, setFlashcardSets] = useState([]);
 	const [quizSets, setQuizSets] = useState([]);
+	const [noteSets, setNoteSets] = useState([]);
 	const [collapsed, setCollapsed] = useState(false);
 	const [activeTab, setActiveTab] = useState("flashcards");
 	const navigate = useNavigate();
@@ -17,6 +19,7 @@ export default function MyLibrary() {
 	useEffect(() => {
 		loadFlashcards();
 		loadQuizzes();
+		loadNotes();
 	}, []);
 
 	const loadFlashcards = () => {
@@ -40,19 +43,25 @@ export default function MyLibrary() {
 		}
 	};
 
+	const deleteFlashcardSet = (setId) => {
+		const stored = JSON.parse(localStorage.getItem("flashcardsData") || "{}");
+		delete stored[setId];
+		localStorage.setItem("flashcardsData", JSON.stringify(stored));
+		setFlashcardSets(Object.entries(stored));
+	};
+
+	const openFlashcards = (flashcardSetId) => {
+		navigate("/flashcards", {
+			state: { flashcardSetId },
+		});
+	};
+
 	const loadQuizzes = () => {
 		const storedQuizzes = localStorage.getItem("quizData");
 		if (storedQuizzes) {
 			const parsed = JSON.parse(storedQuizzes);
 			setQuizSets(Object.entries(parsed));
 		}
-	};
-
-	const deleteFlashcardSet = (setId) => {
-		const stored = JSON.parse(localStorage.getItem("flashcardsData") || "{}");
-		delete stored[setId];
-		localStorage.setItem("flashcardsData", JSON.stringify(stored));
-		setFlashcardSets(Object.entries(stored));
 	};
 
 	const deleteQuizSet = (setId) => {
@@ -62,15 +71,39 @@ export default function MyLibrary() {
 		setQuizSets(Object.entries(stored));
 	};
 
-	const openFlashcards = (flashcardSetId) => {
-		navigate("/flashcards", {
-			state: { flashcardSetId },
-		});
-	};
-
 	const openQuiz = (quizSetId) => {
 		navigate("/quizzes", {
 			state: { quizSetId },
+		});
+	};
+
+	const loadNotes = () => {
+		const storedNotes = localStorage.getItem("notesData");
+		if (storedNotes) {
+			const parsed = JSON.parse(storedNotes);
+			setNoteSets(Object.entries(parsed));
+		}
+	};
+
+	const deleteNoteSet = (setId) => {
+		const stored = JSON.parse(localStorage.getItem("notesData") || "{}");
+		delete stored[setId];
+		localStorage.setItem("notesData", JSON.stringify(stored));
+		setNoteSets(Object.entries(stored));
+	};
+
+	const openNotes = (noteSetId) => {
+		const notesData = JSON.parse(localStorage.getItem("notesData") || "{}");
+		const noteItem = notesData[noteSetId];
+		console.log("Opening note with ID:", noteSetId);
+	
+		if (!noteItem) return;
+	
+		navigate("/notes", {
+			state: {
+				notes: noteItem.notes,
+				noteSetId: noteSetId,
+			},
 		});
 	};
 
@@ -79,7 +112,7 @@ export default function MyLibrary() {
 			<Sidebar collapsed={collapsed} toggleSidebar={toggleSidebar} />
 			<main className="main-content">
 				<div className="library-header">
-					<h1>Your library</h1>
+					<h1>My library</h1>
 					<div className="library-tabs">
 						<span
 							className={activeTab === "flashcards" ? "active-tab" : ""}
@@ -93,15 +126,20 @@ export default function MyLibrary() {
 						>
 							Practice tests
 						</span>
-						<span>Expert solutions</span>
+						<span
+							className={activeTab === "notes" ? "active-tab" : ""}
+							onClick={() => setActiveTab("notes")}
+						>
+							Notes
+						</span>
 						<span>Folders</span>
 						<span>Classes</span>
 					</div>
 				</div>
-				{flashcardSets.length === 0 && quizSets.length === 0 ? (
+				{flashcardSets.length === 0 && quizSets.length === 0 && noteSets.length === 0 ? (
 					<div className="empty-state">
 						<img
-							src="/your-placeholder.png"
+							src={emptyImage}
 							alt="No sets"
 							className="empty-image"
 						/>
@@ -112,67 +150,121 @@ export default function MyLibrary() {
 				) : (
 					<div className="library-wrapper">
 						{/* Flashcard Section */}
-						{activeTab === "flashcards" &&
-							(flashcardSets.length === 0 ? (
-		            <p className="empty-msg">You have no flashcard sets yet.</p>
-	            ) : (
-		            <div className="set-grid">
-			            {flashcardSets.map(([setId, data], index) => (
-				            <div className="set-card" key={setId}>
-					            <button
-						            className="delete-btn"
-						            onClick={() => deleteFlashcardSet(setId)}
-						            title="Delete"
-					            >
-						          <FaTrashAlt />
-					            </button>
-					          <div onClick={() => openFlashcards(setId)}>
-						          <h3>Set {index + 1}</h3>
-						          <p>{data.flashcards?.length || 0} cards</p>
-						          <small>
-							          Uploaded: {new Date(data.created_at).toLocaleString()}
-						          </small>
-					          </div>
-				          </div>
-			          ))}
-		          </div>
-	          ))}
+						{activeTab === "flashcards" && (
+							flashcardSets.length === 0 ? (
+								<div className="empty-state">
+									<img src={emptyImage} alt="No sets" className="empty-image" />
+									<h2>You have no flashcard sets yet</h2>
+									<p>Create or import flashcards to get started</p>
+									<button className="primary-btn" onClick={() => navigate("/")}>
+										Create a set
+									</button>
+								</div>
+							) : (
+								<div className="set-grid">
+									{flashcardSets.map(([setId, data], index) => (
+										<div className="set-card" key={setId}>
+											<button
+												className="delete-btn"
+												onClick={() => deleteFlashcardSet(setId)}
+												title="Delete"
+											>
+												<FaTrashAlt />
+											</button>
+											<div onClick={() => openFlashcards(setId)}>
+												<h3>Set {index + 1}</h3>
+												<p>{data.flashcards?.length || 0} cards</p>
+												<small>
+													{data.modified_at
+														? `Modified: ${new Date(data.modified_at).toLocaleString()}`
+														: `Saved: ${new Date(data.created_at).toLocaleString()}`}
+												</small>
+											</div>
+										</div>
+									))}
+								</div>
+							)
+						)}
 
 						{/* Quiz Section */}
-						{activeTab === "quizzes" &&
-              (quizSets.length === 0 ? (
-                <p className="empty-msg">You have no practice sets yet.</p>
-              ) : (
-                <div className="set-grid">
-                  {quizSets.map(([setId, data], index) => {
-                    const score = data.score ?? 0;
-                    const total = data.total ?? 0;
-                    const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
+						{activeTab === "quizzes" && (
+							quizSets.length === 0 ? (
+								<div className="empty-state">
+									<img src={emptyImage} alt="No quizzes" className="empty-image" />
+									<h2>You have no practice sets yet</h2>
+									<p>Create or take quizzes to see them here</p>
+									<button className="primary-btn" onClick={() => navigate("/")}>
+										Create a quiz
+									</button>
+								</div>
+							) : (
+								<div className="set-grid">
+									{quizSets.map(([setId, data], index) => {
+										const score = data.score ?? 0;
+										const total = data.total ?? 0;
+										const percentage = total > 0 ? Math.round((score / total) * 100) : 0;
 
-                     return (
-                      <div className="set-card" key={setId}>
-                           <button
-                              className="delete-btn"
-                              onClick={() => deleteQuizSet(setId)}
-                              title="Delete"
-                             >
-                            <FaTrashAlt />
-                            </button>
-                        <div onClick={() => openQuiz(setId)}>
-                          <h3>Practice {index + 1}</h3>
-                          <p>{total} questions</p>
-                          <p>Score: {score} / {total} ({percentage}%)</p>
-                          <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${percentage}%` }}>
-                              <span className="progress-label">{percentage}%</span>
-                            </div>
-                          </div>
-                        </div>
-                     </div>
-                    );
-                  })}
-                </div>
-              ))}
+										return (
+											<div className="set-card" key={setId}>
+												<button
+													className="delete-btn"
+													onClick={() => deleteQuizSet(setId)}
+													title="Delete"
+												>
+													<FaTrashAlt />
+												</button>
+												<div onClick={() => openQuiz(setId)}>
+													<h3>Practice {index + 1}</h3>
+													<p>{total} questions</p>
+													<p>Score: {score} / {total} ({percentage}%)</p>
+													<div className="progress-bar">
+														<div className="progress-fill" style={{ width: `${percentage}%` }}>
+															<span className="progress-label">{percentage}%</span>
+														</div>
+													</div>
+												</div>
+											</div>
+										);
+									})}
+								</div>
+							)
+						)}
+						{/* Notes Section */}
+						{activeTab === "notes" && (
+							noteSets.length === 0 ? (
+								<div className="empty-state">
+									<img src={emptyImage} alt="No notes" className="empty-image" />
+									<h2>You have no saved notes yet</h2>
+									<p>Your saved notes will be listed here</p>
+									<button className="primary-btn" onClick={() => navigate("/")}>
+										Create a note
+									</button>
+								</div>
+							) : (
+								<div className="set-grid">
+									{noteSets.map(([setId, data], index) => (
+										<div className="set-card" key={setId}>
+											<button
+												className="delete-btn"
+												onClick={() => deleteNoteSet(setId)}
+												title="Delete"
+											>
+												<FaTrashAlt />
+											</button>
+											<div onClick={() => openNotes(setId)}>
+											  <h3>{data.title || `Notes ${index + 1}`}</h3>
+												<p>{data.notes.length} characters</p>
+												<small>
+													{data.modified_at
+														? `Modified: ${new Date(data.modified_at).toLocaleString()}`
+														: `Saved: ${new Date(data.created_at).toLocaleString()}`}
+												</small>
+											</div>
+										</div>
+									))}
+								</div>
+							)
+						)}
 					</div>
 				)}
 			</main>

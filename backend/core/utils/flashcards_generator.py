@@ -32,7 +32,7 @@ def generate_flashcards_from_text(text: str) -> list[dict]:
     try:
         result = chain.invoke({"text": text[:4000]})
         if isinstance(result, list) and all("question" in item and "answer" in item for item in result):
-            print("Generated")
+            print(f"Result: {result}")
             return result
         else:
             print("Unexpected output format:", result)

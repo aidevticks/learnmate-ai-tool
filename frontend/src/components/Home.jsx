@@ -193,6 +193,7 @@ export default function Home() {
 			});
 		}
 	};
+
   const handleQuizzesClick = async () => {
 		setUploadStatus("⚙️ Generating quizzes...");
 		const fileId = localStorage.getItem("file_id");
@@ -260,6 +261,63 @@ export default function Home() {
 			navigate("/quizzes", { state: { error: error.message } });
 		}
 	};
+
+	const handleNotesClick = async () => {
+		setUploadStatus("⚙️ Generating notes...");
+		const fileId = localStorage.getItem("file_id");
+		const accessToken = localStorage.getItem("access_token");
+		const refreshToken = localStorage.getItem("refresh_token");
+	
+		if (!accessToken || !refreshToken) {
+			setUploadStatus("⚠️ No token found. Please login.");
+			navigate("/login");
+			return;
+		}
+	
+		const refreshAccessToken = async () => {
+			const res = await fetch("http://localhost:8000/api/refresh_token/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ refresh: refreshToken }),
+			});
+	
+			if (!res.ok) throw new Error("Refresh token invalid");
+	
+			const data = await res.json();
+			localStorage.setItem("access_token", data.access);
+			return data.access;
+		};
+	
+		const doGenerateNotes = async (token) =>
+			await fetch("http://127.0.0.1:8000/api/generate-notes/", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ file_id: fileId }),
+			});
+	
+		try {
+			let response = await doGenerateNotes(accessToken);
+	
+			if (response.status === 401) {
+				const newAccessToken = await refreshAccessToken();
+				response = await doGenerateNotes(newAccessToken);
+			}
+	
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error?.error || "Failed to generate notes");
+			}
+	
+			const data = await response.json();
+			navigate("/notes", { state: { notes: data.notes } });
+	
+		} catch (error) {
+			navigate("/notes", { state: { error: error.message } });
+		}
+	};
 	
 
 	const handleCardClick = (action) => {
@@ -292,7 +350,7 @@ export default function Home() {
 					<div className="description-block">
 						<h1 className="main-title">How do you want to study?</h1>
 						<p className="tool-description">
-						Master whatever you’re learning with Quizlet’s interactive flashcards, practice tests, and study activities.
+						Master whatever you’re learning with LearnMate’s interactive flashcards, practice tests, and study activities.
 						</p>
 					</div>
 					{/* <div className="upload-box">
@@ -302,11 +360,12 @@ export default function Home() {
 					</div> */}
 
 					{uploadStatus && (
-						<div className={`upload-message ${uploadStatus.startsWith("✅") ? "success-message" : "error-message"}`}>
-							<span className="icon">{uploadStatus.startsWith("✅") ? "✅" : "❌"}</span>
-							<span className="text">{uploadStatus.replace(/^✅ |^❌ /, "")}</span>
-						</div>
-					)}
+            <div className={`upload-message ${uploadStatus.startsWith("✅") ? "success-message" : 
+                uploadStatus.startsWith("❌") || uploadStatus.startsWith("⚠️") ? "error-message" : "loading-message"}`}>
+                {uploadStatus.startsWith("⚙️") && (<span className="spinner" />)}
+							<span className="text">{uploadStatus.replace(/^✅ |^❌ |^⚠️ |^⚙️ /, "")}</span>
+            </div>
+          )}
 				</div>
 
 				<div className="cards-container">
@@ -320,11 +379,11 @@ export default function Home() {
 						<h3>Quizzes</h3>
 						<p>Test your knowledge with AI-generated quizzes.</p>
 					</div>
-					<div className="card notes-special" onClick={() => handleCardClick(() => navigate('/notes'))}>
-					<IoDocumentTextOutline size={40} className="card-icon" />
-						<h3>Important Notes</h3>
-						<p>Summarized key points extracted from your PDF.</p>
-					</div>
+					<div className="card notes-special" onClick={() => handleCardClick(handleNotesClick)}>
+	        <IoDocumentTextOutline size={40} className="card-icon" />
+	          <h3>Important Notes</h3>
+	          <p>Summarized key points extracted from your PDF.</p>
+          </div>
 					<div className="card tutor-special" onClick={() => handleCardClick(() => navigate('/tutor'))}>
 					<PiStudentFill size={40} className="card-icon" />
 						<h3>Tutor Assistant</h3>
