@@ -1,9 +1,13 @@
 from langchain_core.prompts import PromptTemplate
-from langchain_community.llms import Ollama
+from langchain_openai import ChatOpenAI
 from langchain.chains import LLMChain
+import os
 
-# Initialize Ollama model
-llm = Ollama(model="gemma:2b")
+# Optional: Set your API key (if not already set in the environment)
+# os.environ["OPENAI_API_KEY"] = "your-api-key"
+
+# Initialize OpenAI Chat Model
+llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0.3)
 
 # Define prompt template
 NOTES_PROMPT = PromptTemplate(
@@ -14,8 +18,12 @@ NOTES_PROMPT = PromptTemplate(
     )
 )
 
-# Create Langchain chain
+# Create LangChain chain
 notes_chain = LLMChain(llm=llm, prompt=NOTES_PROMPT)
 
-def generate_notes_from_text(text):
-    return notes_chain.run({"text": text})
+def generate_notes_from_text(text: str) -> str:
+    try:
+        return notes_chain.run({"text": text})
+    except Exception as e:
+        print("Error generating notes:", e)
+        return ""

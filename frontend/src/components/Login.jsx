@@ -113,7 +113,7 @@ export default function Login() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h2 style={styles.heading}>Welcome Back</h2>
+        <h2 style={styles.heading}>Welcome to LearnMate</h2>
         <form onSubmit={handleSubmit} style={styles.form}>
           <label style={styles.label}>Email</label>
           <input

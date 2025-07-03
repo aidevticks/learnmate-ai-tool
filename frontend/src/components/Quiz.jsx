@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
+import { FaArrowLeft, FaArrowRight, FaFilePdf, FaCheckCircle, FaTimesCircle, FaHome } from "react-icons/fa";
 import axios from "axios";
 import jsPDF from "jspdf";
 import "./Quiz.css";
@@ -140,12 +142,16 @@ export default function Quiz() {
       <Sidebar collapsed={collapsed} toggleSidebar={toggleSidebar} />
       <main className="main-content">
         <header className="quiz-header">
-          <div className="controls">
-            <button onClick={() => navigate("/")}>🏠 Home</button>
-            <button onClick={exportPDF}>📄 Export PDF</button>
-          </div>
+        <div className="controls">
+          <button onClick={() => navigate("/")}>
+            <FaHome /> Home
+          </button>
+          <button onClick={exportPDF}>
+            <FaFilePdf /> Export PDF
+          </button>
+        </div>
         </header>
-        <h2 className="page-subtitle">📝 Your Quiz</h2>
+        <h2 className="page-subtitle">Quiz</h2>
         <section ref={pdfRef} className="quiz-grid">
           <div className="quiz-card">
             <div className="quiz-question">
@@ -172,24 +178,37 @@ export default function Quiz() {
               })}
             </ul>
             {selected !== undefined && (
-              <div className="quiz-answer">
-                {selected === correctIndex
-                  ? "✅ Correct!"
-                  : `❌ Incorrect. Correct Answer: ${String.fromCharCode(65 + correctIndex)}. ${currentQuestion.choices[correctIndex]}`}
-              </div>
+              <motion.div
+                className="quiz-answer"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                {selected === correctIndex ? (
+                  <span><FaCheckCircle color="green" />  Correct!</span>
+                ) : (
+                  <span>
+                    <FaTimesCircle color="red" />  Incorrect. Correct Answer:{" "}
+                    <strong>
+                      {String.fromCharCode(65 + correctIndex)}.{" "}
+                      {currentQuestion.choices[correctIndex].replace(/^[A-D]\.\s*/, "")}
+                    </strong>
+                  </span>
+                )}
+              </motion.div>
             )}
             <div className="nav-buttons">
               <button
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 disabled={currentIndex === 0}
               >
-                ⬅️ Previous
+                <FaArrowLeft /> Previous
               </button>
               <button
                 onClick={() => setCurrentIndex((i) => Math.min(i + 1, quizData.length - 1))}
                 disabled={currentIndex === quizData.length - 1}
               >
-                Next ➡️
+                Next <FaArrowRight />
               </button>
             </div>
             {currentIndex === quizData.length - 1 && !isFinished && (
@@ -200,12 +219,22 @@ export default function Quiz() {
               </div>
             )}
             {isFinished && (
-              <div className="quiz-score animated">
+              <motion.div
+                className="quiz-score"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }}
+              >
                 🎯 You scored {score} / {quizData.length} ({percentage}%)
                 <div className="progress-bar">
-                  <div className="progress-fill" style={{ width: `${percentage}%` }}></div>
+                  <motion.div
+                    className="progress-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percentage}%` }}
+                    transition={{ duration: 1 }}
+                  />
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </section>

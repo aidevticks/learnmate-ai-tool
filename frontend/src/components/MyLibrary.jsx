@@ -136,18 +136,6 @@ export default function MyLibrary() {
 						<span>Classes</span>
 					</div>
 				</div>
-				{flashcardSets.length === 0 && quizSets.length === 0 && noteSets.length === 0 ? (
-					<div className="empty-state">
-						<img
-							src={emptyImage}
-							alt="No sets"
-							className="empty-image"
-						/>
-						<h2>You have no sets yet</h2>
-						<p>Sets you create or study will be displayed here</p>
-						<button className="primary-btn">Create a set</button>
-					</div>
-				) : (
 					<div className="library-wrapper">
 						{/* Flashcard Section */}
 						{activeTab === "flashcards" && (
@@ -266,7 +254,6 @@ export default function MyLibrary() {
 							)
 						)}
 					</div>
-				)}
 			</main>
 		</div>
 	);
