@@ -1,7 +1,11 @@
 from langchain_core.prompts import PromptTemplate
-from langchain_community.chat_models import ChatOllama
+from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import JsonOutputParser
 import json
+import os
+
+# Ensure your API key is set in the environment
+# os.environ["OPENAI_API_KEY"] = "your-api-key"  # Optional if already set
 
 # Prompt for generating JSON-style flashcards
 template = """
@@ -19,8 +23,8 @@ Text:
 
 prompt = PromptTemplate.from_template(template)
 
-# Setup Ollama with gemma:2b
-llm = ChatOllama(model="gemma:2b")
+# Setup OpenAI LLM (gpt-3.5-turbo)
+llm = ChatOpenAI(model="gpt-3.5-turbo")
 
 # Optional: JSON parser
 parser = JsonOutputParser()
@@ -40,4 +44,3 @@ def generate_flashcards_from_text(text: str) -> list[dict]:
     except Exception as e:
         print("Error:", e)
         return []
-

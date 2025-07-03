@@ -7,6 +7,7 @@ import "./ImportantNotes.css";
 export default function ImportantNotes() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [toastMessage, setToastMessage] = useState("");
 
   const { notes = "", noteSetId = null, loading, error } = location.state || {};
   const isEditing = !!noteSetId;
@@ -54,7 +55,6 @@ export default function ImportantNotes() {
     const allNotes = JSON.parse(localStorage.getItem("notesData") || "{}");
     const idToUse = id || `notes_${Date.now()}`;
     const existingNote = allNotes[idToUse];
-
     allNotes[idToUse] = {
       ...existingNote,
       notes: editableNotes,
@@ -63,11 +63,14 @@ export default function ImportantNotes() {
       created_at: existingNote?.created_at || new Date().toISOString(),
       modified_at: isEditing ? new Date().toISOString() : null,
     };
-
     localStorage.setItem("notesData", JSON.stringify(allNotes));
-    alert(isEditing ? "✏️ Notes updated!" : "✅ Notes saved to library!");
+
+    setToastMessage(isEditing ? "✏️ Notes updated!" : "✅ Notes saved to library!");
     setShowTitleModal(false);
-    navigate("/library");
+
+    setTimeout(() => {
+      setToastMessage("");
+    }, 5000);
   };
 
   const handleModalSave = () => {
@@ -120,6 +123,11 @@ export default function ImportantNotes() {
                 <button className="save-btn" onClick={handleModalSave}>Save</button>
               </div>
             </div>
+          </div>
+        )}
+        {toastMessage && (
+          <div className="toast-notification">
+            {toastMessage}
           </div>
         )}
       </main>

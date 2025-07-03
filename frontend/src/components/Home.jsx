@@ -26,6 +26,11 @@ export default function Home() {
 
 	useEffect(() => {
 		document.body.className = "light-mode";
+	
+		const savedFileName = localStorage.getItem("uploaded_file_name");
+		if (savedFileName) {
+			setFile({ name: savedFileName }); // 🧠 Simulate file info for UI
+		}
 	}, []);
 
 	const handleLogout = async () => {
@@ -114,6 +119,7 @@ export default function Home() {
 				localStorage.setItem("file_id", resData.file_id);
 				setUploadStatus("✅ File uploaded successfully!");
 				setFile(null);
+				localStorage.setItem("uploaded_file_name", file.name); // 💾 Save file name
 			} else {
 				const err = await response.json();
 				setUploadStatus(`❌ Upload failed: ${JSON.stringify(err)}`);
@@ -318,10 +324,68 @@ export default function Home() {
 			navigate("/notes", { state: { error: error.message } });
 		}
 	};
+	const handleTutorAssistantClick = async () => {
+		setUploadStatus("⚙️ Preparing Tutor Assistant...");
+	
+		const fileId = localStorage.getItem("file_id");
+		const accessToken = localStorage.getItem("access_token");
+		const refreshToken = localStorage.getItem("refresh_token");
+	
+		if (!accessToken || !refreshToken) {
+			setUploadStatus("⚠️ No token found. Please login.");
+			navigate("/login");
+			return;
+		}
+	
+		const refreshAccessToken = async () => {
+			const res = await fetch("http://localhost:8000/api/refresh_token/", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ refresh: refreshToken }),
+			});
+	
+			if (!res.ok) throw new Error("Refresh token invalid");
+	
+			const data = await res.json();
+			localStorage.setItem("access_token", data.access);
+			return data.access;
+		};
+	
+		const doIndexFile = async (token) =>
+			await fetch("http://127.0.0.1:8000/api/index_pdf/", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ file_id: fileId }),
+			});
+	
+		try {
+			let response = await doIndexFile(accessToken);
+	
+			if (response.status === 401) {
+				const newAccessToken = await refreshAccessToken();
+				response = await doIndexFile(newAccessToken);
+			}
+	
+			if (!response.ok) {
+				const error = await response.json();
+				throw new Error(error?.error || "Failed to prepare tutor assistant");
+			}
+	
+			setUploadStatus("✅ Tutor Assistant is ready!");
+			navigate("/tutor");
+	
+		} catch (error) {
+			setUploadStatus("❌ " + error.message);
+		}
+	};	
 	
 
 	const handleCardClick = (action) => {
-		if (uploadStatus !== "✅ File uploaded successfully!") {
+		const fileId = localStorage.getItem("file_id");
+		if (!fileId) {
 			alert("❗ Please upload a PDF first.");
 			return;
 		}
@@ -384,7 +448,8 @@ export default function Home() {
 	          <h3>Important Notes</h3>
 	          <p>Summarized key points extracted from your PDF.</p>
           </div>
-					<div className="card tutor-special" onClick={() => handleCardClick(() => navigate('/tutor'))}>
+		  <div className="card tutor-special" onClick={() => handleCardClick(handleTutorAssistantClick)}>
+
 					<PiStudentFill size={40} className="card-icon" />
 						<h3>Tutor Assistant</h3>
 						<p>Interactive explanations and personalized help.</p>
@@ -392,7 +457,9 @@ export default function Home() {
 				</div>
 				<div className="upload-box">
 						<input type="file" id="pdf-upload" accept="application/pdf" onChange={handleFileChange} hidden />
-						<label htmlFor="pdf-upload" className="choose-btn">📄 {file ? file.name : "Choose PDF"}</label>
+						<label htmlFor="pdf-upload" className="choose-btn">
+						📄 {file ? file.name : "Choose PDF"}
+						</label>
 						<button className="upload-btn" onClick={uploadFile} disabled={!file}>📤 Upload</button>
 					</div>
 			</main>
