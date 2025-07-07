@@ -11,6 +11,9 @@ import Quiz from "./components/Quiz.jsx";
 import MyLibrary from "./components/MyLibrary";
 import ImportantNotes from "./components/ImportantNotes.jsx";
 import TutorAssistant from "./components/TutorAssistant"; 
+import Pricing from "./components/Pricing";
+import About from "./components/About";
+
 
 function App() {
   return (
@@ -52,6 +55,22 @@ function App() {
         element={
           <ProtectedRoute>
             <TutorAssistant />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pricing"
+        element={
+          <ProtectedRoute>
+            <Pricing />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/about"
+        element={
+          <ProtectedRoute>
+            <About />
           </ProtectedRoute>
         }
       />
